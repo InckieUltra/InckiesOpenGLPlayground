@@ -14,7 +14,7 @@
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-const float dtdt = 0.03f, damp = 0.95f;
+const float dtdt = 0.03f, damp = 0.98f;
 vector<glm::vec3> velocity;
 glm::vec3 spherePos;
 float sphereR = 2.5f;
@@ -22,6 +22,7 @@ const int Y_SEGMENTS = 10;
 const int X_SEGMENTS = 10;
 const GLfloat  PI = 3.14159265358979323846f;
 const int numOfVertices = 13;
+const glm::vec3 G = glm::vec3(0, -9.8f, 0);
 
 Camera camera = Camera();
 Camera_Movement cameraMovement;
@@ -176,7 +177,7 @@ void init_cloth() {
 	}
 }
 
-void Strain_Limiting(float dt)
+void Strain_Limiting_PBD(float dt)
 {
 	vector<glm::vec3> sum_x;
 	vector<int> sum_n;
@@ -201,6 +202,31 @@ void Strain_Limiting(float dt)
 		vertices[i].position = (0.2f*vertices[i].position + sum_x[i]) / (0.2f + sum_n[i]);
 	}
 	//...
+}
+
+float springK = 8000;
+void Strain_Limiting(float dt)
+{
+	float mass = (float)(vertices.size());
+	vector<glm::vec3> g;
+	for (int i = 0; i < vertices.size(); i++) {
+		g.push_back(glm::vec3(0, 0, 0));
+	}
+
+
+	for (int e = 0; e < E.size() / 2; e++)
+	{
+		int i = E[e * 2 + 0];
+		int j = E[e * 2 + 1];
+		glm::vec3 distance = vertices[i].position - vertices[j].position;
+		g[i] += springK * (1 - L[e] / glm::length(distance))*glm::normalize(distance) + G * 1.0f;
+		g[j] -= springK * (1 - L[e] / glm::length(distance))*glm::normalize(distance) + G * 1.0f;
+	}
+	for (int i = 0; i < vertices.size(); i++) {
+		if (i == 0 || i == numOfVertices - 1)
+			continue;
+		vertices[i].position -= g[i] / (float)(1 / (dt*dt) + 4 * springK);
+	}
 }
 
 void Collision_Handling(float dt)
@@ -377,14 +403,25 @@ int main()
 			{
 				if (i == 0 || i == numOfVertices-1)	continue;
 				//Initial Setup
-				velocity[i] += G * dt/2.0f;
+				velocity[i] += G * dt;
 				velocity[i] *= damp;
 				vertices[i].position += velocity[i] * dt;
 				//...
 			}
 
-			for (int l = 0; l < 7; l++)
+			vector<glm::vec3> xp;
+			for (int i = 0; i < vertices.size(); i++) {
+				xp.push_back(vertices[i].position);
+			}
+			for (int l = 0; l < 14; l++)
 				Strain_Limiting(dt);
+			for (int i = 0; i < vertices.size(); i++) {
+				velocity[i] += (vertices[i].position - xp[i]) / dt;
+			}
+
+
+
+			//Strain_Limiting_PBD(dt);
 
 			Collision_Handling(dt);
 
