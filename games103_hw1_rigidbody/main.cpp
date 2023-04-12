@@ -121,8 +121,8 @@ int main()
 
 	// build and compile our shader program
 	// ------------------------------------
-	Shader ourShader("D:\\OpenGLPlayground\\HelloWorld\\3.3.shader.vs", "D:\\OpenGLPlayground\\HelloWorld\\3.3.shader.fs"); // you can name your shader files however you like
-	Shader bunnyShader("D:\\OpenGLPlayground\\HelloWorld\\3.3.shader.vs", "D:\\OpenGLPlayground\\games103_hw1_rigidbody\\3.3.bunny.fs.txt");
+	Shader ourShader("D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\HelloWorld\\3.3.shader.vs", "D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\HelloWorld\\3.3.shader.fs"); // you can name your shader files however you like
+	Shader bunnyShader("D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\HelloWorld\\3.3.shader.vs", "D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw1_rigidbody\\3.3.bunny.fs.txt");
 
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
@@ -180,7 +180,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	// 加载并生成纹理
 	int width, height, nrChannels;
-	unsigned char *data = stbi_load("C:\\Users\\NH55\\Pictures\\私\\lr.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("C:\\Users\\NH55\\Pictures\\marble.png", &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -214,9 +214,9 @@ int main()
 	cout << ourModel.meshes.size() <<' '<<minn<<' '<<maxn<<' '<<cnt/ourModel.meshes.size()<<' '<< cnt << endl;
 
 	bool launched = false, rotating = false;
-	float dtdt = 0.01f;
+	float dtdt = 0.03f;
 	float dtV = -dtdt/2, dtX = 0, dtW= -dtdt/2, dtR=0, dtT=0;
-	glm::vec3 velocity = glm::vec3(-7.0f, 0.5f, 0.0f);
+	glm::vec3 velocity = glm::vec3(-2.0f, 0.5f, 0.0f);
 	glm::vec3 position = glm::vec3(0.0f, -1.0f, 0.0f);
 	glm::vec3 constantG = glm::vec3(0.0f, -9.8f, 0.0f);
 	glm::vec3 omega = glm::vec3(0.000001f,0.000001f,0.000001f);
@@ -275,24 +275,26 @@ int main()
 			rotating = true;
 		}
 		if (glfwGetKey(window, GLFW_KEY_2)) {
-			velocity = glm::vec3(-7, 2, 0);
-			omega = glm::vec3(1, 1, 0);
+			restitution = 0.5f;
+			velocity = glm::vec3(-2, 1, 0);
+			omega = glm::vec3(0.000001f, 0.000001f, 0.000001f);
 			restitution = 0.5f;
 		}
 		if (glfwGetKey(window, GLFW_KEY_R)) {
 			launched = rotating = false;
 			dtV = -dtdt / 2, dtX = 0, dtW = -dtdt / 2, dtR = 0, dtT = 0;
-			velocity = glm::vec3(-7.0f, 2.0f, 0.0f);
+			velocity = glm::vec3(-2.0f, 1.0f, 0.0f);
 			position = glm::vec3(0.0f, 0.0f, 0.0f);
 			omega = glm::vec3(0.000001f, 0.000001f, 0.000001f);
 			rotation = glm::mat4(1.0f);
 			rotation = glm::rotate(rotation, glm::radians(60.0f), glm::vec3(1, 1, 1));
+			restitution= 0.5f;
 		}
 
 		//cout << glfwGetTime() - curT << endl;
 		
 		if (launched) {
-			dtT += deltaTime;
+			dtT += dtdt;
 			if (dtT >= dtdt) {
 				vector<int> floorCollision;
 				vector<int> wallCollision;
@@ -392,30 +394,31 @@ int main()
 						omega += glm::vec3(domega.x, domega.y, domega.z);
 					}
 				}
+				dtT = 0;
 			}
 
 			//Update State
-			dtV += deltaTime; dtX += deltaTime;
+			dtV += dtdt; dtX += dtdt;
 			if (dtX >= dtdt) {
-				position += dtX*velocity;
+				position += dtdt * velocity;
 				dtX = 0;
 			}
 			if (dtV >= dtdt) {
-				velocity *= 0.995;
-				velocity += dtV * constantG;
-				dtV = 0;
+				velocity += dtdt * constantG;
+				velocity *= 0.98;
+				dtV = -0.5f;
 			}
 
-			dtW += deltaTime; dtR += deltaTime;
+			dtW += dtdt; dtR += dtdt;
 			if (dtR >= dtdt) {
 				glm::mat4 newrotation = glm::mat4(1.0f);
-				newrotation = glm::rotate(newrotation, dtR*glm::length(omega), glm::vec3(omega.x,omega.y,omega.z));
+				newrotation = glm::rotate(newrotation, dtdt * glm::length(omega), glm::vec3(omega.x,omega.y,omega.z));
 				rotation = newrotation * rotation;
 				dtR = 0;
 			}
 			if (dtW >= dtdt) {
-				omega *= 0.95f;
-				dtW = 0;
+				omega *= 0.8f;
+				dtW = -0.5f;
 			}
 		}
 

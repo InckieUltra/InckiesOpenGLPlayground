@@ -274,8 +274,8 @@ int main()
 
 	// build and compile our shader program
 	// ------------------------------------
-	Shader ourShader("D:\\OpenGLPlayground\\games103_hw2_cloth\\3.3.shader.vs", "D:\\OpenGLPlayground\\games103_hw2_cloth\\3.3.shader.fs"); // you can name your shader files however you like
-	Shader anotherShader("D:\\OpenGLPlayground\\games103_hw2_cloth\\3.3.shader.vs", "D:\\OpenGLPlayground\\games103_hw2_cloth\\3.3.bunny.fs.txt");
+	Shader ourShader("D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw2_cloth\\3.3.shader.vs", "D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw2_cloth\\3.3.shader.fs"); // you can name your shader files however you like
+	Shader anotherShader("D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw2_cloth\\3.3.shader.vs", "D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw2_cloth\\3.3.bunny.fs.txt");
 
 	//Init
 	init_cloth();
@@ -360,7 +360,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	// 加载并生成纹理
 	int width, height, nrChannels;
-	unsigned char *data = stbi_load("D:\\OpenGLPlayground\\games103_hw2_cloth\\images.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("D:\\OpenGLPlayground\\InckiesOpenGLPlayground\\games103_hw2_cloth\\images.jpg", &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
