@@ -26,6 +26,7 @@ vector<int>	Tet;
 int tet_number;			//The number of tetrahedra
 
 vector<glm::vec3> 	Force;
+vector<glm::vec3> force;
 vector<glm::vec3> 	V;
 vector<glm::vec3> 	X;
 vector<float> A_ref;
@@ -151,6 +152,12 @@ void initHouse() {
 
 		infile.close();
 
+		for (int i = 0; i < number; i++) {
+			force.push_back(glm::vec3(0.0f));
+			V_sum.push_back(glm::vec3(0.0f));
+			V_num.push_back(0);
+		}
+
 		//Centralize the model.
 		glm::vec3 center = glm::vec3(0.0f);
 		for (int i = 0; i < number; i++)		center += X[i];
@@ -231,10 +238,7 @@ void initHouse() {
 	}
 }
 
-vector<glm::vec3> force;
-
-void applyElasticForce(int t) {
-	for (int tet = t; tet < t+1000 && tet < tet_number; tet++) {
+void applyElasticForce(int tet) {
 		//TODO: Deformation Gradient
 		glm::mat4 F = buildEdgeMatrix(tet);
 		F = F * inv_Dm[tet];
@@ -250,7 +254,17 @@ void applyElasticForce(int t) {
 		force[Tet[tet * 4 + 0]] -= glm::vec3(tempf[0][0], tempf[1][0], tempf[2][0])
 			+ glm::vec3(tempf[0][1], tempf[1][1], tempf[2][1])
 			+ glm::vec3(tempf[0][2], tempf[1][2], tempf[2][2]);
-	}
+
+		glm::vec3 tempsum = velocity[Tet[tet * 4 + 0]] + velocity[Tet[tet * 4 + 1]] + velocity[Tet[tet * 4 + 2]] + velocity[Tet[tet * 4 + 3]];
+
+		V_sum[Tet[tet * 4 + 0]] += tempsum;
+		V_sum[Tet[tet * 4 + 1]] += tempsum;
+		V_sum[Tet[tet * 4 + 2]] += tempsum;
+		V_sum[Tet[tet * 4 + 3]] += tempsum;
+		V_num[Tet[tet * 4 + 0]] += 4;
+		V_num[Tet[tet * 4 + 1]] += 4;
+		V_num[Tet[tet * 4 + 2]] += 4;
+		V_num[Tet[tet * 4 + 3]] += 4;
 }
 
 void _Update(GLFWwindow *window, float dT) {
@@ -262,16 +276,47 @@ void _Update(GLFWwindow *window, float dT) {
 		}
 	}
 
-	force.clear();
 	for (int i = 0; i < number; i++) {
 		velocity[i] *= 0.998f;
-		force.push_back(G);
+		force[i] = G;
+		V_sum[i] = glm::vec3(0.0f);
+		V_num[i] = 0;
 	}
 
-	for (int tet = 0; tet < tet_number; tet+=1000)
+	vector<thread> threads;
+	int THREAD_NUM = 12;
+	threads.reserve(static_cast<size_t>(THREAD_NUM));
+
+	// 假如有任务数为 100 个(编号为0,1,...,99), 平分到10个线程上去，每个线程执行10个任务
+	int TASK_NUM = tet_number;
+	int AVG_NUM = TASK_NUM / THREAD_NUM;
+
+	for (int i = 0; i < THREAD_NUM - 1; ++i) {
+		threads.emplace_back([i, AVG_NUM]() {
+			for (int j = i * AVG_NUM; j < (i + 1) * AVG_NUM; j++) {
+				applyElasticForce(j);
+			}
+			});
+	}
+	threads.emplace_back([&]() {
+		for (int j = (THREAD_NUM - 1) * AVG_NUM; j < TASK_NUM; j++) {
+			applyElasticForce(j);
+		}
+		});
+
+
+	for (auto &t : threads) {
+		t.join();
+	}
+
+	for (int tet = 0; tet < tet_number; tet+=2000)
 	{
 		thread workwork(applyElasticForce, tet);
 		workwork.join();
+	}
+
+	for (int i = 0; i < number; i++) {
+		velocity[i] = velocity[i]*0.9f + 0.1f*V_sum[i] / (float)V_num[i];
 	}
 
 	for (int i = 0; i < number; i++) {
