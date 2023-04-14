@@ -24,23 +24,31 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // data
+struct node {
+	glm::vec3 position;
+	glm::vec2 uv;
+};
+vector<node> vertices;
+vector<int> triangles;
 const int size = 100;
 float rate = 0.005f;
 float gamma = 0.004f;
 float damping = 0.996f;
-vector< vector<float>> 	old_h;
-vector< vector<float>>	low_h;
-vector< vector<float>>	vh;
-vector< vector<float>>	b;
+vector< vector<float>> 	old_h(size, vector<float>(size, 0));
+vector< vector<float>>	low_h(size, vector<float>(size, 0));
+vector< vector<float>>	vh(size, vector<float>(size, 0));
+vector< vector<float>>	b(size, vector<float>(size, 0));
 
-vector< vector<bool>>	cg_mask;
-vector< vector<float>>	cg_p;
-vector< vector<float>>	cg_r;
-vector< vector<float>>	cg_Ap;
+vector< vector<bool>>	cg_mask(size, vector<float>(size, 0));
+vector< vector<float>>	cg_p(size, vector<float>(size, 0));
+vector< vector<float>>	cg_r(size, vector<float>(size, 0));
+vector< vector<float>>	cg_Ap(size, vector<float>(size, 0));
 bool 	tag = true;
 
 glm::vec3	cube_v = glm::vec3(0.0f);
 glm::vec3 	cube_w = glm::vec3(0.0f);
+
+int op[4][2] = { {0,-1},{0,1},{-1,0},{1,0} };
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -82,50 +90,90 @@ void processInput(GLFWwindow *window,float deltaTime)
 }
 
 void initWaterSurface() {
-	Vector3[] X = new Vector3[size*size];
+	vector<glm::vec3> X;
 
 	for (int i = 0; i < size; i++)
 		for (int j = 0; j < size; j++)
 		{
-			X[i*size + j].x = i * 0.1f - size * 0.05f;
-			X[i*size + j].y = 0;
-			X[i*size + j].z = j * 0.1f - size * 0.05f;
+			X.push_back(glm::vec3(i * 0.1f - size * 0.05f, 0.0f, j * 0.1f - size * 0.05f));
 		}
 
-	int[] T = new int[(size - 1) * (size - 1) * 6];
+	vector<int> T;
 	int index = 0;
 	for (int i = 0; i < size - 1; i++)
 		for (int j = 0; j < size - 1; j++)
 		{
-			T[index * 6 + 0] = (i + 0)*size + (j + 0);
-			T[index * 6 + 1] = (i + 0)*size + (j + 1);
-			T[index * 6 + 2] = (i + 1)*size + (j + 1);
-			T[index * 6 + 3] = (i + 0)*size + (j + 0);
-			T[index * 6 + 4] = (i + 1)*size + (j + 1);
-			T[index * 6 + 5] = (i + 1)*size + (j + 0);
+			T.push_back((i + 0) * size + (j + 0));
+			T.push_back((i + 0) * size + (j + 1));
+			T.push_back((i + 1) * size + (j + 1));
+			T.push_back((i + 0) * size + (j + 0));
+			T.push_back((i + 1) * size + (j + 1));
+			T.push_back((i + 1) * size + (j + 0));
 			index++;
 		}
-	mesh.vertices = X;
-	mesh.triangles = T;
-	mesh.RecalculateNormals();
 
-	low_h = new float[size, size];
-	old_h = new float[size, size];
-	vh = new float[size, size];
-	b = new float[size, size];
-
-	cg_mask = new bool[size, size];
-	cg_p = new float[size, size];
-	cg_r = new float[size, size];
-	cg_Ap = new float[size, size];
+	triangles = T;
 
 	for (int i = 0; i < size; i++)
 		for (int j = 0; j < size; j++)
 		{
-			low_h[i, j] = 99999;
-			old_h[i, j] = 0;
-			vh[i, j] = 0;
+			low_h[i][j] = 99999;
+			old_h[i][j] = 0;
+			vh[i][j] = 0;
 		}
+}
+
+bool inBoundry(int x, int y) {
+	return (x >= 0 && x < size) && (y >= 0 && y < size);
+}
+
+void Shallow_Wave(vector< vector<float>> old_h, vector< vector<float>> h, vector< vector<float>> new_h)
+{
+	vector< vector<float>> new_h(size, vector<int>(size, 0.0f));
+	//Step 1:
+	//TODO: Compute new_h based on the shallow wave model.
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			new_h[i][j] += (h[i][j] - old_h[i][j]) * damping;
+			for (int k = 0; k < 4; k++) {
+				int newi = i + op[k][0], newj = j + op[k][1];
+				if (inBoundry(newi, newj)) {
+					new_h += (h[newi][newj] - h[i][j]) * rate;
+				}
+			}
+		}
+	}
+
+	//Step 2: Block->Water coupling
+	//TODO: for block 1, calculate low_h.
+	//TODO: then set up b and cg_mask for conjugate gradient.
+	//TODO: Solve the Poisson equation to obtain vh (virtual height).
+
+	//TODO: for block 2, calculate low_h.
+	//TODO: then set up b and cg_mask for conjugate gradient.
+	//TODO: Solve the Poisson equation to obtain vh (virtual height).
+
+	//TODO: Diminish vh.
+
+	//TODO: Update new_h by vh.
+
+	//Step 3
+	//TODO: old_h <- h; h <- new_h;
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			old_h[i][j] = h[i][j];
+			h[i][j] = new_h[i][j];
+		}
+	}
+
+	//Step 4: Water->Block coupling.
+	//More TODO here.
+
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			vertices[i * size + j].position = X[i * size + j];
+		}
+	}
 }
 
 int main()
