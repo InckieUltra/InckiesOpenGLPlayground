@@ -284,7 +284,7 @@ void _Update(GLFWwindow *window, float dT) {
 	}
 
 	vector<thread> threads;
-	int THREAD_NUM = 12;
+	int THREAD_NUM = 6;
 	threads.reserve(static_cast<size_t>(THREAD_NUM));
 
 	// 假如有任务数为 100 个(编号为0,1,...,99), 平分到10个线程上去，每个线程执行10个任务

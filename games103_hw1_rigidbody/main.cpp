@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "model_m.h"
 #include <cmath>
+#include <thread>
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -17,6 +18,23 @@ const unsigned int SCR_HEIGHT = 600;
 
 Camera camera = Camera();
 Camera_Movement cameraMovement;
+
+// data
+bool launched = false, rotating = false;
+float dtdt = 0.025f;
+float dtV = -dtdt / 2, dtX = 0, dtW = -dtdt / 2, dtR = 0, dtT = 0;
+glm::vec3 velocity = glm::vec3(-4.0f, 1.0f, 0.0f);
+glm::vec3 position = glm::vec3(0.0f, -1.0f, 0.0f);
+glm::vec3 constantG = glm::vec3(0.0f, -9.8f, 0.0f);
+glm::vec3 omega = glm::vec3(0.000001f, 0.000001f, 0.000001f);
+glm::mat4 rotation = glm::mat4(1.0f);
+float restitution = 0.5f;
+
+glm::mat4 I_ref = glm::mat4(0.0f);
+float m = 1;
+float mass = 0;
+Model *theModel;
+Model ourModel("");
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -90,6 +108,72 @@ void drawFloorAndWall(Shader ourShader) {
 		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1, 0));
 		ourShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+glm::vec4 J;
+glm::mat4 I;
+
+struct CollisionHelper {
+	glm::vec3 center;
+	int size;
+	bool isCollision;
+}c[2];
+
+void CollisionDetection(int li, int ui) {
+
+	for (int i = li; i < ui; i++) {
+		glm::vec3 _ri = ourModel.meshes[0].vertices[i * 10].Position;
+		glm::vec4 Rri = rotation * glm::vec4(_ri.x, _ri.y, _ri.z, 1.0f);
+		glm::vec3 xi = position + glm::vec3(Rri.x, Rri.y, Rri.z);
+
+		if (xi.y <= -2.0f) {
+			c[0].isCollision = true;
+			c[0].size++;
+			c[0].center += xi - position;
+		}
+		if (xi.x <= -3.0f) {
+			c[1].isCollision = true;
+			c[1].size++;
+			c[1].center += xi - position;
+		}
+	}
+}
+
+void CollisionHandling(int cid, glm::vec3 normal) {
+	if (!c[cid].isCollision)
+		return;
+	restitution -= 0.0000005f;
+	glm::vec3 collideCenter = c[cid].center / (float)c[cid].size;
+	glm::vec3 xi = position + collideCenter;
+	if ((xi.y <= -2.0f && cid == 0) || (xi.x <= -3.0f && cid == 1)) {
+		glm::vec3 vi = velocity + glm::vec3(omega.x*collideCenter.x, omega.y*collideCenter.y, omega.z*collideCenter.z);
+		glm::vec3 vn = glm::dot(vi, normal) * normal;
+		glm::vec3 vt = vi - vn;
+		if (glm::dot(vn, normal) < 0) {
+			float vtValue = max(1 - (0.5*(1 + restitution)*glm::length(vn)) / glm::length(vt), (double)0);
+			vn = -restitution * vn;
+			vt = vt * vtValue;
+			//cout << (vt + vn).x << ' ' << (vt + vn).y << ' ' << (vt + vn).z << endl;
+		}
+		glm::vec3 dvi = (vn + vt) - vi;
+		//cout << "dvi" << ' ' << dvi.x << ' ' << dvi.y << ' ' << dvi.z << endl;
+		glm::mat4 Rriprime = glm::mat4(0, -collideCenter.z, collideCenter.y, 0,
+			collideCenter.z, 0, -collideCenter.x, 0,
+			-collideCenter.y, collideCenter.x, 0, 0,
+			0, 0, 0, 1);
+		I = rotation * I_ref * glm::transpose(rotation);
+		glm::mat4 K = glm::mat4(1.0f / mass) - Rriprime * glm::inverse(I) * Rriprime;
+		glm::mat4 inverse_K = glm::inverse(K);
+		float *vs = glm::value_ptr(inverse_K);
+
+		J += glm::inverse(K) * glm::vec4(dvi.x, dvi.y, dvi.z, 1.0f);
+		//cout << J.x << ' ' << J.y << ' ' << J.z << endl;
+
+		velocity += 1.0f / mass * glm::vec3(J.x, J.y, J.z);
+		glm::vec3 RriCrossJ = glm::cross(collideCenter, glm::vec3(J.x, J.y, J.z));
+		glm::vec4 domega = glm::inverse(I) * glm::vec4(RriCrossJ.x, RriCrossJ.y, RriCrossJ.z, 1.0f);
+		omega += glm::vec3(domega.x, domega.y, domega.z);
+	}
 }
 
 int main()
@@ -203,7 +287,9 @@ int main()
 
 	// load models
 	// -----------
-	Model ourModel("C:/Users/NH55/Downloads/stanford_bunny_obj_mtl_jpg-master/bunny.obj");
+	Model oourModel("C:/Users/NH55/Downloads/stanford_bunny_obj_mtl_jpg-master/colorbunny.obj");
+	theModel = &ourModel;
+	ourModel = oourModel;
 
 	int cnt = 0,maxn=0,minn=0x3f3f3f3f;
 	for (int i = 0; i < ourModel.meshes.size(); i++) {
@@ -213,21 +299,9 @@ int main()
 	}
 	cout << ourModel.meshes.size() <<' '<<minn<<' '<<maxn<<' '<<cnt/ourModel.meshes.size()<<' '<< cnt << endl;
 
-	bool launched = false, rotating = false;
-	float dtdt = 0.03f;
-	float dtV = -dtdt/2, dtX = 0, dtW= -dtdt/2, dtR=0, dtT=0;
-	glm::vec3 velocity = glm::vec3(-2.0f, 0.5f, 0.0f);
-	glm::vec3 position = glm::vec3(0.0f, -1.0f, 0.0f);
-	glm::vec3 constantG = glm::vec3(0.0f, -9.8f, 0.0f);
-	glm::vec3 omega = glm::vec3(0.000001f,0.000001f,0.000001f);
-	glm::mat4 rotation = glm::mat4(1.0f);
 	rotation = glm::rotate(rotation, glm::radians(60.0f), glm::vec3(1, 1, 1));
-	float restitution = 0.5f;
 
-	glm::mat4 I_ref = glm::mat4(0.0f);
-	float m = 1;
-	float mass = 0;
-	for (int i = 0; i < ourModel.meshes[0].vertices.size(); i+=10)
+	for (int i = 0; i < ourModel.meshes[0].vertices.size(); i += 10)
 	{
 		mass += m;
 		glm::vec3 _vertice = ourModel.meshes[0].vertices[i].Position;
@@ -237,10 +311,10 @@ int main()
 			-m * _vertice.z * _vertice.x, -m * _vertice.z * _vertice.y, diag - m * _vertice.z * _vertice.z, 0,
 			0, 0, 0, 0);
 	}
-	I_ref += glm::mat4(0,0,0,0,
-		0,0,0,0,
-		0,0,0,0,
-		0,0,0,1.0f);
+	I_ref += glm::mat4(0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 1.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -275,17 +349,16 @@ int main()
 			rotating = true;
 		}
 		if (glfwGetKey(window, GLFW_KEY_2)) {
-			restitution = 0.5f;
-			velocity = glm::vec3(-2, 1, 0);
-			omega = glm::vec3(0.000001f, 0.000001f, 0.000001f);
+			velocity = glm::vec3(-4, 2, 0);
+			omega = glm::vec3(0.000001f, 0.000001f, 0.001f);
 			restitution = 0.5f;
 		}
 		if (glfwGetKey(window, GLFW_KEY_R)) {
 			launched = rotating = false;
 			dtV = -dtdt / 2, dtX = 0, dtW = -dtdt / 2, dtR = 0, dtT = 0;
-			velocity = glm::vec3(-2.0f, 1.0f, 0.0f);
+			velocity = glm::vec3(-4.0f, 1.0f, 0.0f);
 			position = glm::vec3(0.0f, 0.0f, 0.0f);
-			omega = glm::vec3(0.000001f, 0.000001f, 0.000001f);
+			omega = glm::vec3(0.000001f, 0.000001f, 0.001f);
 			rotation = glm::mat4(1.0f);
 			rotation = glm::rotate(rotation, glm::radians(60.0f), glm::vec3(1, 1, 1));
 			restitution= 0.5f;
@@ -296,104 +369,32 @@ int main()
 		if (launched) {
 			dtT += dtdt;
 			if (dtT >= dtdt) {
-				vector<int> floorCollision;
-				vector<int> wallCollision;
-				//float curT = glfwGetTime();
-				glm::vec4 J = glm::vec4(0.0f);
-				glm::mat4 I;
-				for (int i = 0; i < ourModel.meshes[0].vertices.size(); i+=10) {
-					glm::vec3 _ri = ourModel.meshes[0].vertices[i].Position;
-					glm::vec4 Rri = rotation * glm::vec4(_ri.x, _ri.y, _ri.z, 1.0f);
-					glm::vec3 xi = position + glm::vec3(Rri.x, Rri.y, Rri.z);
+				c[0].size = c[1].size = 0;
+				c[0].center = c[1].center = glm::vec3(0.0f);
+				c[0].isCollision = c[1].isCollision = false;
+				J = glm::vec4(0.0f);
 
-					if (xi.y <= -2.0f) {
-						floorCollision.push_back(i);
-					}
-					if (xi.x <= -3.0f) {
-						wallCollision.push_back(i);
-					}
+				vector<thread> threads;
+				int THREAD_NUM = 6;
+				threads.reserve(static_cast<size_t>(THREAD_NUM));
+				int TASK_NUM = ourModel.meshes[0].vertices.size()/10;
+				int AVG_NUM = TASK_NUM / THREAD_NUM;
+
+				for (int i = 0; i < THREAD_NUM - 1; ++i) {
+					threads.emplace_back([i, AVG_NUM]() {
+						CollisionDetection(i*AVG_NUM, (i+1)*AVG_NUM);
+						});
+				}
+				threads.emplace_back([&]() {
+					CollisionDetection((THREAD_NUM-1)*AVG_NUM, TASK_NUM);
+					});
+				for (auto &t : threads) {
+					t.join();
 				}
 
-				//Process floorCollision
-				if (floorCollision.size() > 0) {
-					restitution -= 0.00005f;
-					glm::vec3 collideCenter = glm::vec3(0.0f);
-					for (int i = 0; i < floorCollision.size(); i++) {
-						glm::vec3 _ri = ourModel.meshes[0].vertices[floorCollision[i]].Position;
-						glm::vec4 Rri = rotation * glm::vec4(_ri.x, _ri.y, _ri.z, 1.0f);
-						collideCenter += glm::vec3(Rri.x, Rri.y, Rri.z);
-					}
-					collideCenter /= floorCollision.size();
-					glm::vec3 xi = position + collideCenter;
-					if (xi.y <= -2.0f) {
-						glm::vec3 vi = velocity + glm::vec3(omega.x*collideCenter.x, omega.y*collideCenter.y, omega.z*collideCenter.z);
-						glm::vec3 vn = glm::dot(vi, glm::vec3(0, 1.0f, 0)) * glm::vec3(0, 1, 0);
-						glm::vec3 vt = vi - vn;
-						if (glm::dot(vn, glm::vec3(0, 1, 0)) < 0) {
-							float vtValue = max(1 - (0.5*(1+restitution)*glm::length(vn)) / glm::length(vt), (double)0);
-							vn = -restitution * vn;
-							vt = vt * vtValue;
-							//cout << (vt + vn).x << ' ' << (vt + vn).y << ' ' << (vt + vn).z << endl;
-						}
-						glm::vec3 dvi = (vn + vt) - vi;
-						//cout << "dvi" << ' ' << dvi.x << ' ' << dvi.y << ' ' << dvi.z << endl;
-						glm::mat4 Rriprime = glm::mat4(0, -collideCenter.z, collideCenter.y, 0,
-							collideCenter.z, 0, -collideCenter.x, 0,
-							-collideCenter.y, collideCenter.x, 0, 0,
-							0, 0, 0, 1);
-						I = rotation * I_ref * glm::transpose(rotation);
-						glm::mat4 K = glm::mat4(1.0f / mass) - Rriprime * glm::inverse(I) * Rriprime;
-						glm::mat4 inverse_K = glm::inverse(K);
-						float *vs = glm::value_ptr(inverse_K);
-						for (int i = 0; i < 16; i++) {
-							//cout << *(vs + i) << ' ';
-						}
-						J += glm::inverse(K) * glm::vec4(dvi.x, dvi.y, dvi.z, 1.0f);
-						//cout << J.x << ' ' << J.y << ' ' << J.z << endl;
+				CollisionHandling(0, glm::vec3(0, 1, 0));
+				CollisionHandling(1, glm::vec3(1, 0, 0));
 
-						velocity += 1.0f/mass * glm::vec3(J.x, J.y, J.z);
-						glm::vec3 RriCrossJ = glm::cross(collideCenter, glm::vec3(J.x, J.y, J.z));
-						glm::vec4 domega = glm::inverse(I) * glm::vec4(RriCrossJ.x, RriCrossJ.y, RriCrossJ.z, 1.0f);
-						omega += glm::vec3(domega.x, domega.y, domega.z);
-					}
-				}
-				//Process wallCollision
-				if (wallCollision.size() > 0) {
-					restitution -= 0.00005f;
-					glm::vec3 collideCenter = glm::vec3(0.0f);
-					for (int i = 0; i < wallCollision.size(); i++) {
-						glm::vec3 _ri = ourModel.meshes[0].vertices[wallCollision[i]].Position;
-						glm::vec4 Rri = rotation * glm::vec4(_ri.x, _ri.y, _ri.z, 1.0f);
-						collideCenter += glm::vec3(Rri.x, Rri.y, Rri.z);
-					}
-					collideCenter /= wallCollision.size();
-					glm::vec3 xi = position + collideCenter;
-					if (xi.x <= -3.0f) {
-						glm::vec3 vi = velocity + glm::vec3(omega.x*collideCenter.x, omega.y*collideCenter.y, omega.z*collideCenter.z);
-						glm::vec3 vn = glm::dot(vi, glm::vec3(1.0f, 0, 0)) * glm::vec3(1, 0, 0);
-						glm::vec3 vt = vi - vn;
-						if (glm::dot(vn, glm::vec3(1, 0, 0)) < 0) {
-							float vtValue = max(1 - (0.5*(1 + restitution)*glm::length(vn)) / glm::length(vt), (double)0);
-							vn = -restitution * vn;
-							vt = vt * vtValue;
-						}
-						glm::vec3 dvi = (vn + vt) - vi;
-						glm::mat4 Rriprime = glm::mat4(0, -collideCenter.z, collideCenter.y, 0,
-							collideCenter.z, 0, -collideCenter.x, 0,
-							-collideCenter.y, collideCenter.x, 0, 0,
-							0, 0, 0, 1);
-						I = rotation * I_ref * glm::transpose(rotation);
-						glm::mat4 K = glm::mat4(1.0f / mass) - Rriprime * glm::inverse(I) * Rriprime;
-						glm::mat4 inverse_K = glm::inverse(K);
-						float *vs = glm::value_ptr(inverse_K);
-						J += glm::inverse(K) * glm::vec4(dvi.x, dvi.y, dvi.z, 1.0f);
-
-						velocity += 1.0f / mass * glm::vec3(J.x, J.y, J.z);
-						glm::vec3 RriCrossJ = glm::cross(collideCenter, glm::vec3(J.x, J.y, J.z));
-						glm::vec4 domega = glm::inverse(I) * glm::vec4(RriCrossJ.x, RriCrossJ.y, RriCrossJ.z, 1.0f);
-						omega += glm::vec3(domega.x, domega.y, domega.z);
-					}
-				}
 				dtT = 0;
 			}
 
@@ -405,8 +406,8 @@ int main()
 			}
 			if (dtV >= dtdt) {
 				velocity += dtdt * constantG;
-				velocity *= 0.98;
-				dtV = -0.5f;
+				velocity *= 0.996;
+				dtV = -0.5f * dtdt;
 			}
 
 			dtW += dtdt; dtR += dtdt;
@@ -417,8 +418,8 @@ int main()
 				dtR = 0;
 			}
 			if (dtW >= dtdt) {
-				omega *= 0.8f;
-				dtW = -0.5f;
+				omega *= 0.95f;
+				dtW = -0.5f * dtdt;
 			}
 		}
 
