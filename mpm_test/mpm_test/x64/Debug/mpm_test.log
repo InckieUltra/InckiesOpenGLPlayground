@@ -1,0 +1,9 @@
+﻿  main.cpp
+d:\openglplayground\inckiesopenglplayground\mpm_test\config.h(17): warning C4091: “static ”: 没有声明变量时忽略“ConfigHelper”的左侧
+d:\openglplayground\inckiesopenglplayground\mpm_test\scene.h(33): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(71): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(72): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(73): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(74): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(87): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  mpm_test.vcxproj -> D:\OpenGLPlayground\InckiesOpenGLPlayground\mpm_test\x64\Debug\mpm_test.exe

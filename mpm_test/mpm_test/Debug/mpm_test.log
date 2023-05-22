@@ -1,0 +1,53 @@
+﻿  main.cpp
+d:\openglplayground\inckiesopenglplayground\mpm_test\config.h(17): warning C4091: “static ”: 没有声明变量时忽略“ConfigHelper”的左侧
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(60): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(61): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(62): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(63): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\openglplayground\inckiesopenglplayground\mpm_test\opengl_render.h(76): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+main.obj : error LNK2019: 无法解析的外部符号 _glfwInit，该符号在函数 "void __cdecl init_window(void)" (?init_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwTerminate，该符号在函数 "void __cdecl exit_window(void)" (?exit_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwWindowHint，该符号在函数 "void __cdecl init_window(void)" (?init_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwCreateWindow，该符号在函数 "void __cdecl init_window(void)" (?init_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwSetWindowShouldClose，该符号在函数 "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwSetFramebufferSizeCallback，该符号在函数 "void __cdecl init_window(void)" (?init_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwPollEvents，该符号在函数 "void __cdecl draw_frame(class Scene &,class Shader &)" (?draw_frame@@YAXAAVScene@@AAVShader@@@Z) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwSetInputMode，该符号在函数 "void __cdecl init_window(void)" (?init_window@@YAXXZ) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwGetKey，该符号在函数 "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwSetCursorPosCallback，该符号在函数 "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwGetTime，该符号在函数 "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z) 中被引用
+main.obj : error LNK2019: 无法解析的外部符号 _glfwSwapBuffers，该符号在函数 "void __cdecl draw_frame(class Scene &,class Shader &)" (?draw_frame@@YAXAAVScene@@AAVShader@@@Z) 中被引用
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glClear
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glClearColor
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glEnable
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glViewport
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glDrawArrays
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glDrawElements
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glBindTexture
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glActiveTexture
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glBindBuffer
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGenBuffers
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glBufferData
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glAttachShader
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glCompileShader
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glCreateProgram
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glCreateShader
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glDeleteShader
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glEnableVertexAttribArray
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGetProgramiv
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGetProgramInfoLog
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGetShaderiv
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGetShaderInfoLog
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGetUniformLocation
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glLinkProgram
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glShaderSource
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glUseProgram
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glUniform1i
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glUniformMatrix4fv
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glVertexAttribPointer
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glVertexAttribIPointer
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glBindVertexArray
+main.obj : error LNK2001: 无法解析的外部符号 _glad_glGenVertexArrays
+D:\OpenGL\Lib\glfw3.lib : warning LNK4272: 库计算机类型“x64”与目标计算机类型“x86”冲突
+D:\OpenGL\Lib\glm_static.lib : warning LNK4272: 库计算机类型“x64”与目标计算机类型“x86”冲突
+D:\OpenGLPlayground\InckiesOpenGLPlayground\mpm_test\Debug\mpm_test.exe : fatal error LNK1120: 43 个无法解析的外部命令
